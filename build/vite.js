@@ -126,8 +126,13 @@ export function createBrowserViteConfig({
   host = 'localhost',
   port = 4173,
   allowedHosts = DEFAULT_ALLOWED_HOSTS,
+  https,
   command,
 } = {}) {
+  // Vite serves HTTPS over HTTP/2 unless a proxy table is set, and HTTP/2
+  // requests carry `:authority` instead of the Host header every route checks.
+  // An empty table keeps TLS on HTTP/1.1 and proxies nothing.
+  const tls = https ? { https, proxy: {} } : {};
   return {
     plugins: [
       // First, so every API response, including a Host refusal, carries them.
@@ -172,10 +177,14 @@ export function createBrowserViteConfig({
       // Embed-mode documents are framable instead: embed-framing.js rewrites
       // only the frame-ancestors directive and keeps the rest of the policy.
       headers: BROWSER_HEADERS,
+      // Optional TLS ({ cert, key }), served directly rather than through a
+      // proxy so the cost-bearing routes still see an encrypted socket and no
+      // forwarding headers. iOS Safari grants the microphone only over HTTPS.
+      ...tls,
     },
     // The preview server serves the same documents, so it carries the same
     // framing + CSP hardening (one constant, no drift).
-    preview: { headers: BROWSER_HEADERS },
+    preview: { headers: BROWSER_HEADERS, ...tls },
     define: {
       'import.meta.env.GOOGLE_MAPS_API_KEY': JSON.stringify(googleApiKey),
       'import.meta.env.CESIUM_ION_TOKEN': JSON.stringify(cesiumToken),

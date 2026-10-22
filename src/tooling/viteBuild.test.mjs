@@ -72,6 +72,18 @@ test('explicit build inputs preserve browser-only defines, plugin order and loop
     createBrowserViteConfig({ host: '::', port: '4800' }).server.port,
     4800,
   );
+  // TLS is opt-in and reaches the dev and preview servers alike.
+  assert.equal(config.server.https, undefined);
+  assert.equal(config.preview.https, undefined);
+  const tls = { cert: 'cert-fixture', key: 'key-fixture' };
+  const secure = createBrowserViteConfig({ https: tls });
+  assert.equal(secure.server.https, tls);
+  assert.equal(secure.preview.https, tls);
+  assert.equal(secure.preview.headers, secure.server.headers);
+  // HTTP/1.1, so requests keep the Host header the routes check.
+  assert.deepEqual(secure.server.proxy, {});
+  assert.deepEqual(secure.preview.proxy, {});
+  assert.equal(config.server.proxy, undefined);
 });
 
 test('build helper does not discover environment values or construct local providers', () => {
