@@ -1,0 +1,39 @@
+# Temporary: checks which public data services answer a cloud runner, and
+# whether a browser page may read them directly (CORS). Runs only on pushes
+# to this diagnostics branch.
+name: Net diagnostics
+on:
+  push:
+    branches: [claude/net-diagnostics]
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Probe data services
+        run: |
+          probe() {
+            name="$1"; url="$2"
+            hdr=$(mktemp); body=$(mktemp)
+            code=$(curl -sS -m 25 -o "$body" -D "$hdr" -w '%{http_code}' \
+              -H 'Origin: https://gods-eye-mewu.onrender.com' \
+              -A 'gods-eye-view-probe/1.0 (+https://github.com/bilawalsidhu/gods-eye-view)' "$url" 2>&1 || true)
+            acao=$(grep -i '^access-control-allow-origin:' "$hdr" | tr -d '\r' | head -1)
+            ctype=$(grep -i '^content-type:' "$hdr" | tr -d '\r' | head -1)
+            size=$(wc -c < "$body")
+            snippet=$(head -c 120 "$body" | tr '\n\r' '  ')
+            echo "RESULT | $name | status=$code | ${acao:-no ACAO} | $ctype | bytes=$size | $snippet"
+          }
+          probe celestrak-stations 'https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=tle'
+          probe celestrak-active 'https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=tle'
+          probe celestrak-starlink 'https://celestrak.org/NORAD/elements/gp.php?GROUP=starlink&FORMAT=tle'
+          probe opensky-bbox 'https://opensky-network.org/api/states/all?lamin=38&lomin=-78&lamax=41&lomax=-73'
+          probe opensky-global 'https://opensky-network.org/api/states/all'
+          probe adsb-lol-point 'https://api.adsb.lol/v2/lat/40/lon/-75/dist/100'
+          probe adsb-lol-mil 'https://api.adsb.lol/v2/mil'
+          probe adsb-fi-point 'https://opendata.adsb.fi/api/v2/lat/40/lon/-75/dist/100'
+          probe airplanes-live 'https://api.airplanes.live/v2/point/40/-75/100'
+          probe adsb-one 'https://api.adsb.one/v2/point/40/-75/100'
+          probe satnogs-tle 'https://db.satnogs.org/api/tle/?format=json'
+          probe tle-api 'https://tle.ivanstanojevic.me/api/tle/25544'
+          probe usgs-quakes 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson'
