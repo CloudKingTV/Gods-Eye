@@ -26,6 +26,8 @@ import {
   displaySceneTitle,
   displayShotTitle,
   getSceneAppendRecipeById,
+  getSceneRecipeById,
+  sceneShotCaptionHoldSec,
 } from './recipes.js';
 import { sceneLayerPlan, sceneRequiresContextModeExit } from './scenePolicy.js';
 import { t, tn, msg } from '../i18n/index.js';
@@ -1297,7 +1299,10 @@ export class SceneDirector {
 
   /** Keep a shot on its final camera pose until its authored layer reveal finishes. */
   _effectiveShotHoldSec(scene, shot, resolvedStates = null) {
-    return effectiveShotHoldSec(scene, shot, this._scenePacks, resolvedStates);
+    return Math.max(
+      effectiveShotHoldSec(scene, shot, this._scenePacks, resolvedStates),
+      sceneShotCaptionHoldSec(scene, shot),
+    );
   }
 
   /** Resolve one shot's authored flight plus any runtime-enforced hold. */
@@ -1765,7 +1770,12 @@ export class SceneDirector {
 
     const startSceneId =
       sceneId || this._selectedSceneId || this._project.scenes[0]?.id;
-    let queue = this._buildPlaybackQueue(startSceneId, { single });
+    // A story scene (a recipe with `playback.single`) plays alone instead of
+    // round-robining on into the rest of the project.
+    const playback = getSceneRecipeById(startSceneId)?.playback ?? {};
+    let queue = this._buildPlaybackQueue(startSceneId, {
+      single: single || playback.single === true,
+    });
     if (afterShotId !== null) {
       const index = queue.findIndex(
         ({ scene, shot }) =>
@@ -1822,7 +1832,7 @@ export class SceneDirector {
       this.styleManager.setRecordingMode(true, {
         hidePanels: true,
         hudMode: 'full',
-        safeFrame: '16:9',
+        safeFrame: playback.safeFrame || '16:9',
       });
     }
 

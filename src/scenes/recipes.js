@@ -672,7 +672,7 @@ const WAINWRIGHT_FIRE_RECIPE = Object.freeze({
   id: 'wainwright-fire-2026',
   version: 1,
   title: msg('Wainwright Fire'),
-  durationSec: 40,
+  durationSec: 64,
   style: 'normal',
   ui: { hidePanels: false, hudMode: 'minimal', safeFrame: '16:9' },
   layers: {},
@@ -684,6 +684,8 @@ const WAINWRIGHT_FIRE_RECIPE = Object.freeze({
   },
   installAlongsideSceneId: 'bhote-koshi-nepal-scene',
   installAlongsideFallbackSceneId: 'flights-radar',
+  // A story: START plays these shots alone, captioned, with no video frame.
+  playback: { single: true, safeFrame: 'none' },
   dataPacks: [
     {
       id: 'before',
@@ -730,75 +732,96 @@ const WAINWRIGHT_FIRE_RECIPE = Object.freeze({
   cameraPath: [
     {
       title: msg('Alberta Overview'),
+      caption: msg(
+        'CFB Wainwright, in east-central Alberta. On 17 October 2026 a grass fire swept across part of the base’s training area.',
+      ),
       lat: 53.4,
       lon: -113.0,
       alt: 1400000,
       pitch: -90,
       duration: 5,
-      hold: 1.5,
+      hold: 3,
     },
     {
       title: msg('CFB Wainwright Training Area'),
+      caption: msg(
+        'The camp lies just south of the town of Wainwright (cyan dots). The cyan line marks the ground that burned.',
+      ),
       lat: 52.78,
       lon: -110.9,
       alt: 42000,
       pitch: -90,
       duration: 6,
-      hold: 2,
+      hold: 5,
       dataPackIds: ['outline'],
       interactions: WAINWRIGHT_CARDS,
     },
     {
       title: msg('Before: 4 Oct 2026'),
+      caption: msg(
+        'Satellite image from 4 October 2026, two weeks before the fire. Note the dry grassland north of the lake.',
+      ),
       lat: 52.775,
       lon: -110.9,
       alt: 19000,
       pitch: -90,
       duration: 3,
-      hold: 4,
+      hold: 6,
       dataPackIds: ['before'],
     },
     {
       title: msg('After: 19 Oct 2026'),
+      caption: msg(
+        'The same view on 19 October 2026, two days after the fire. The dark ground north and east of the lake is new burn scar.',
+      ),
       lat: 52.775,
       lon: -110.9,
       alt: 19000,
       pitch: -90,
       duration: 1,
-      hold: 4,
+      hold: 6,
       dataPackIds: ['after'],
     },
     {
       title: msg('Burn Scar Outline'),
+      caption: msg(
+        'About 12 km² burned, across 6.3 km. Estimated from the two satellite images; not an official fire perimeter.',
+      ),
       lat: 52.765,
       lon: -110.9,
       alt: 13000,
       pitch: -90,
       duration: 2.5,
-      hold: 5,
+      hold: 7,
       dataPackIds: ['after', 'outline'],
       interactions: WAINWRIGHT_CARDS,
     },
     {
       title: msg('Burn Scar Over Before Image'),
+      caption: msg(
+        'The same outline on the 4 October image: how this ground looked before it burned.',
+      ),
       lat: 52.765,
       lon: -110.9,
       alt: 13000,
       pitch: -90,
       duration: 1,
-      hold: 4,
+      hold: 6,
       dataPackIds: ['before', 'outline'],
       interactions: WAINWRIGHT_CARDS,
     },
     {
       title: msg('Low-Angle Scar View'),
+      caption: msg(
+        'A low-angle view from the southeast, looking across the burned area.',
+      ),
       lat: 52.705,
       lon: -110.83,
       alt: 5200,
       heading: 300,
       pitch: -28,
       duration: 6,
-      hold: 4,
+      hold: 6,
       dataPackIds: ['after', 'outline'],
       interactions: WAINWRIGHT_CARDS,
     },
@@ -1197,6 +1220,43 @@ export const SCENE_APPEND_RECIPES = BHOTE_KOSHI_NEPAL_APPEND_RECIPE
 
 export function getSceneRecipeById(id) {
   return SCENE_RECIPES.find((recipe) => recipe.id === id) || null;
+}
+
+/** The recipe keyframe that captions a built-in shot, or null. */
+function captionKeyframe(scene, shot) {
+  const recipe = getSceneRecipeById(scene?.id);
+  if (!recipe || shot?.sourcePackId !== recipe.id) return null;
+  const keyframe = recipe.cameraPath?.find(({ title }) => title === shot.title);
+  return keyframe?.caption ? keyframe : null;
+}
+
+/**
+ * Caption for a built-in shot during a run: its step in the scene, its title
+ * and the recipe keyframe's `caption`. '' when the recipe authors none, or
+ * the shot is not the recipe's own (a user-captured or renamed shot).
+ * @param {{id?: string, shots?: object[]}} scene
+ * @param {{id?: string, title?: string, sourcePackId?: string}} shot
+ * @returns {string}
+ */
+export function sceneShotCaption(scene, shot) {
+  const keyframe = captionKeyframe(scene, shot);
+  if (!keyframe) return '';
+  const index = scene.shots.findIndex(({ id }) => id === shot.id);
+  const step = t('Step {n} of {total}', {
+    n: index + 1,
+    total: scene.shots.length,
+  });
+  return `${step} · ${displayShotTitle(shot.title, shot, scene)}\n${t(keyframe.caption)}`;
+}
+
+/**
+ * Reading time a captioned built-in shot holds for at least: the recipe's
+ * current hold, so a project saved from an earlier, shorter recipe still
+ * leaves time to read. 0 for any other shot.
+ * @returns {number}
+ */
+export function sceneShotCaptionHoldSec(scene, shot) {
+  return Number(captionKeyframe(scene, shot)?.hold) || 0;
 }
 
 export function getSceneAppendRecipeById(id) {

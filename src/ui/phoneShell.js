@@ -111,6 +111,7 @@ export function initPhoneShell({
   let activeTab = null;
   let syncing = false;
   let nav = null;
+  let stop = null;
   let observer = null;
 
   const isOpen = (id) => {
@@ -216,10 +217,25 @@ export function initPhoneShell({
     }
   };
 
+  // Scene playback hides every panel, and Escape is the only other way out,
+  // so a phone gets its own STOP in place of the tab bar while a scene runs.
+  const buildStop = () => {
+    const button = documentRef.createElement('button');
+    button.type = 'button';
+    button.id = 'phone-scene-stop';
+    button.textContent = t('STOP');
+    button.addEventListener('click', () =>
+      documentRef.getElementById('scene-stop-btn')?.click(),
+    );
+    return button;
+  };
+
   const enter = () => {
     body.classList.add('phone-shell');
     nav ??= buildNav();
     if (!nav.isConnected) body.append(nav);
+    stop ??= buildStop();
+    if (!stop.isConnected) body.append(stop);
     // Start from a clean globe: close whatever the desktop layout left open,
     // except the first panel that was open, which becomes the sheet.
     const opened = PHONE_TABS.filter((tab) => isOpen(tabTargetId(tab)));
@@ -234,6 +250,7 @@ export function initPhoneShell({
     body.classList.remove('phone-shell');
     delete body.dataset.phoneSheet;
     nav?.remove();
+    stop?.remove();
     for (const el of documentRef.querySelectorAll('.phone-sheet-off'))
       el.classList.remove('phone-sheet-off');
   };

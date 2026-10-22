@@ -43,7 +43,11 @@ export class RecordingControls {
 
     if (this._safeFrameOverlay) {
       this._safeFrameOverlay.classList.remove('ratio-9-16', 'ratio-16-9');
-      this._safeFrameOverlay.classList.toggle('active', this._recordingMode);
+      // 'none' records without a framing guide (story scenes on a phone).
+      this._safeFrameOverlay.classList.toggle(
+        'active',
+        this._recordingMode && safeFrame !== 'none',
+      );
       this._safeFrameOverlay.classList.add(
         safeFrame === '9:16' ? 'ratio-9-16' : 'ratio-16-9',
       );

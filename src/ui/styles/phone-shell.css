@@ -287,3 +287,59 @@ body.phone-shell [data-director-packs] > section {
   padding: 4px 6px !important;
   font-size: 10px !important;
 }
+
+/* ── Scene playback: a caption card at the top, STOP in place of the tabs.
+   Recording mode already hides the panels, so the tabs could open nothing. ── */
+#phone-scene-stop {
+  display: none;
+}
+
+body.phone-shell.scene-playback-mode #phone-nav {
+  display: none;
+}
+
+body.phone-shell.scene-playback-mode #phone-scene-stop {
+  /* Top right: the globe actions are hidden while a scene plays, and the
+     bottom edge belongs to the required map credit. */
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  right: 12px;
+  z-index: 170;
+  display: block;
+  height: 36px;
+  padding: 0 18px;
+  color: #ffd2d8;
+  background: rgba(40, 6, 12, 0.88);
+  border: 1px solid rgba(255, 110, 130, 0.55);
+  border-radius: 18px;
+  font: 600 12px/1 var(--font-mono, monospace);
+  letter-spacing: 0.18em;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body.phone-shell #safe-frame-overlay {
+  display: none !important;
+}
+
+body.phone-shell #scene-runtime {
+  top: var(--phone-sheet-top);
+  right: 8px;
+  left: 8px;
+  max-width: none;
+  padding: 10px 12px;
+  color: #e3faff;
+  background: rgba(4, 12, 18, 0.84);
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+  text-align: left;
+  text-shadow: none;
+  transform: none;
+}
+
+body.phone-shell #scene-runtime::first-line {
+  color: #5eeaff;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}

@@ -17,7 +17,12 @@ import test from 'node:test';
 
 import { SceneDirector } from './director.js';
 import { SCENE_TRACKING_PARAM_KEYS } from './scenePolicy.js';
-import { SCENE_RECIPES, getSceneAppendRecipeById } from './recipes.js';
+import {
+  SCENE_RECIPES,
+  getSceneAppendRecipeById,
+  sceneShotCaption,
+  sceneShotCaptionHoldSec,
+} from './recipes.js';
 import { parseSceneDocument } from '../director/document.js';
 
 const NEPAL_ORIGINAL_SHOT_TITLES = [
@@ -511,6 +516,48 @@ test('an existing public default project gains Nepal without replacing authored 
       'bhote-koshi-nepal-scene',
       'wainwright-fire-2026',
     ]);
+  } finally { restore(); }
+});
+
+test('a story scene plays alone; other scenes keep the project round-robin', async () => {
+  const project = structuredClone(PROJECT_FIXTURE);
+  project.scenes[0].id = 'flights-radar';
+  const { director, restore } = makeDirector({ project });
+  const calls = [];
+  director._buildPlaybackQueue = (sceneId, options) => {
+    calls.push([sceneId, options.single]);
+    return [];
+  };
+  try {
+    await director.startScene('wainwright-fire-2026');
+    await director.startScene('flights-radar');
+    assert.deepEqual(calls, [
+      ['wainwright-fire-2026', true],
+      ['flights-radar', false],
+    ]);
+  } finally { restore(); }
+});
+
+test('Wainwright shots carry step captions and a reading-time hold floor', () => {
+  const project = structuredClone(PROJECT_FIXTURE);
+  project.scenes[0].id = 'flights-radar';
+  const { director, restore } = makeDirector({ project });
+  try {
+    const scene = director._project.scenes.find(({ id }) => id === 'wainwright-fire-2026');
+    const before = scene.shots[2];
+    assert.equal(
+      sceneShotCaption(scene, before),
+      'Step 3 of 7 · Before: 4 Oct 2026\nSatellite image from 4 October 2026, two weeks before the fire. Note the dry grassland north of the lake.',
+    );
+    // A project saved with the first, shorter holds still gets reading time.
+    before.holdSec = 1;
+    assert.equal(director._effectiveShotHoldSec(scene, before), 6);
+    // A shot the user captured into the scene has no caption and no floor.
+    const captured = { ...before, id: 'mine', sourcePackId: undefined, holdSec: 1 };
+    assert.equal(sceneShotCaption(scene, captured), '');
+    assert.equal(sceneShotCaptionHoldSec(scene, captured), 0);
+    const flights = director._project.scenes.find(({ id }) => id === 'flights-radar');
+    assert.equal(sceneShotCaption(flights, flights.shots[0]), '');
   } finally { restore(); }
 });
 

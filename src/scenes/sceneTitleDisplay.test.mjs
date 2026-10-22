@@ -94,6 +94,7 @@ test('the Scene status line shows an operator-typed shot title as typed', async 
     _renderSceneSelect() {},
     _renderShotList() {},
     _updateStatus: (text) => statuses.push(text),
+    _updateRuntime() {},
     _logEvent() {},
   };
   const adapter = createScenePlaybackAdapter(director, 4);

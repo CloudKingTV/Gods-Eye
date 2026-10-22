@@ -331,6 +331,10 @@ html:not([lang='en']) #scene-panel .scene-controls .scene-btn {
   padding: 6px 14px;
   text-shadow: 0 0 8px rgba(0, 212, 255, 0.55);
   pointer-events: none;
+  /* A story scene's caption is "Step n of N · title" over one sentence. */
+  max-width: min(640px, calc(100vw - 32px));
+  white-space: pre-line;
+  text-align: center;
 }
 
 #scene-runtime.active {
