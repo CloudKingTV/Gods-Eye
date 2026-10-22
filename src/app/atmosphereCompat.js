@@ -18,9 +18,24 @@
  *   reference to type 'thread float3' could not bind to an lvalue of type
  *   '__metal_generic float3'
  *
- * This is the only shader in Cesium that binds varyings to `out` params --
- * SkyAtmosphere and the ground-atmosphere fragment path both route through
- * locals first, so they are unaffected and stay on.
+ * Two more Cesium vertex shaders make the same bind, and fail the same way on
+ * an iPhone (Cesium 1.138):
+ *
+ *   - `SkyAtmosphereVS` writes v_rayleighColor, v_mieColor, v_opacity and
+ *     v_translucent through `computeAtmosphereScattering` unless
+ *     PER_FRAGMENT_ATMOSPHERE is defined. Cesium already takes that path while
+ *     the globe is hidden, which is why the first frames render; showing the
+ *     globe switches to the per-vertex program and the link fails.
+ *     `skyAtmosphere.perFragmentAtmosphere = true` keeps the per-fragment path.
+ *   - `GlobeVS` does the same for ground atmosphere unless
+ *     PER_FRAGMENT_GROUND_ATMOSPHERE is defined, which Cesium sets only while
+ *     the camera is farther from the Earth's center than
+ *     `globe.nightFadeOutDistance`. Zeroing that distance keeps the
+ *     per-fragment path at every height. The distance otherwise only fades
+ *     the night side under globe lighting, which this app leaves off. (Its
+ *     FOG branch is covered by `fog.renderable` below.)
+ *
+ * The per-fragment paths route through locals, so the effects stay on.
  *
  * Cesium attaches that stage in `ModelSceneGraph.configurePipeline` under a
  * single condition:
@@ -176,7 +191,8 @@ export function shouldDisableModelAtmosphere({
 }
 
 /**
- * Keep Cesium's broken model-atmosphere stage out of the pipeline.
+ * Keep Cesium's out-param-to-varying shaders off this device: the model
+ * atmosphere stage, and the per-vertex sky and ground atmosphere.
  *
  * Returns true when the workaround was applied. Safe to call on any scene;
  * scenes without a fog object are left untouched.
@@ -185,5 +201,7 @@ export function applyModelAtmosphereWorkaround(scene, options = {}) {
   if (!scene?.fog) return false;
   if (!shouldDisableModelAtmosphere(options)) return false;
   scene.fog.renderable = false;
+  if (scene.skyAtmosphere) scene.skyAtmosphere.perFragmentAtmosphere = true;
+  if (scene.globe) scene.globe.nightFadeOutDistance = 0;
   return true;
 }

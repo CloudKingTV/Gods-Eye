@@ -193,6 +193,41 @@ test('applies to the scene by clearing renderable, never enabled', () => {
   assert.equal(scene.fog.enabled, true);
 });
 
+test('keeps the sky and ground atmosphere on their per-fragment paths', () => {
+  const scene = {
+    fog: { enabled: true, renderable: true },
+    skyAtmosphere: { show: true, perFragmentAtmosphere: false },
+    globe: { showGroundAtmosphere: true, nightFadeOutDistance: 1e7 },
+  };
+  assert.equal(
+    applyModelAtmosphereWorkaround(scene, {
+      navigatorLike: {
+        userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)',
+      },
+      createProbeContext: () => fakeGl({ linkOk: true }),
+    }),
+    true,
+  );
+  assert.equal(scene.skyAtmosphere.perFragmentAtmosphere, true);
+  assert.equal(scene.skyAtmosphere.show, true, 'the sky stays on');
+  assert.equal(scene.globe.nightFadeOutDistance, 0);
+  assert.equal(
+    scene.globe.showGroundAtmosphere,
+    true,
+    'ground atmosphere stays on',
+  );
+
+  const desktop = structuredClone(scene);
+  desktop.skyAtmosphere.perFragmentAtmosphere = false;
+  desktop.globe.nightFadeOutDistance = 1e7;
+  applyModelAtmosphereWorkaround(desktop, {
+    navigatorLike: LINUX_DESKTOP,
+    createProbeContext: () => fakeGl({ linkOk: true }),
+  });
+  assert.equal(desktop.skyAtmosphere.perFragmentAtmosphere, false);
+  assert.equal(desktop.globe.nightFadeOutDistance, 1e7);
+});
+
 test('leaves unaffected devices completely untouched', () => {
   const scene = { fog: { enabled: true, renderable: true } };
   const applied = applyModelAtmosphereWorkaround(scene, {
