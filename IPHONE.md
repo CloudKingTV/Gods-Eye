@@ -1,28 +1,70 @@
 # God's Eye View on your iPhone
 
 Your iPhone can't run God's Eye View by itself. The app needs a small Node
-server that holds your API keys and fetches the live data (flights, ships,
-cameras and so on), and iOS can't run that server. So your computer runs the
-app and your iPhone opens it like an app from the Home Screen.
+server that fetches the live data (flights, ships, satellites and so on), and
+iOS can't run that server. Something else has to run it. There are two ways:
 
-```
-iPhone (Safari / Home Screen icon)
-   │  private, encrypted Tailscale link: works on Wi-Fi or cellular
-   ▼
-Your computer: `npm run iphone` → https://<your-computer>.<tailnet>.ts.net:4173
-```
-
-[Tailscale](https://tailscale.com) is a free private network for your own
-devices. Only devices signed in to your Tailscale account can open the link.
-Your home Wi-Fi neighbours and the internet can't. It also gives the page a
-real HTTPS certificate, which iPhone Safari requires before it will use the
-microphone for voice control.
+- **[Cloud](#option-a-cloud-no-computer-needed)**: a free Render server runs
+  it. You need no computer, and you can set it up entirely from the phone.
+  Voice, Google search, TomTom traffic speeds and Mapillary street photos
+  don't work this way.
+- **[Your own computer](#option-b-your-own-computer-over-tailscale)**: every
+  feature works, but the computer has to be on.
 
 ---
 
-## One-time setup
+## Option A: Cloud (no computer needed)
 
-### 1. On your computer (Mac, Windows or Linux)
+1. On the iPhone, open this link in Safari:
+   **https://render.com/deploy?repo=https://github.com/CloudKingTV/Gods-Eye/tree/claude/iphone-setup**
+2. Sign up or sign in to Render with **GitHub**. If Render asks for access to
+   the repo, allow **CloudKingTV/Gods-Eye**.
+3. Render shows the `gods-eye` service and asks for **GEV_ACCESS_PASSWORD**.
+   Choose a password of 8 or more characters. Anyone who knows it can use the
+   app, so don't reuse an important password.
+4. Tap **Apply** or **Deploy**. The first build takes a few minutes. When it
+   finishes, open the service and tap its `https://gods-eye-xxxx.onrender.com`
+   link.
+5. Type the password once. Then tap **Share → Add to Home Screen**, and open
+   the app from the new icon. The first time the icon opens, type the password
+   again: the Home Screen app keeps its own sign-in, separate from Safari.
+   After that, it remembers you for a year.
+
+Things to know:
+
+- **Cost:** the free plan is $0. It goes to sleep after about 15 minutes
+  without use, and the next visit takes about a minute to wake it. Render's
+  paid **Starter** plan (about $7 a month, at Render → service → Settings →
+  Instance Type) keeps it awake.
+- **Without keys:** you get Esri satellite imagery, flights, military
+  traffic, satellites, earthquakes, weather, launches, public cameras and
+  radio.
+- **Adding keys:** in Render, open the service, go to **Environment**, add
+  keys such as `CESIUM_ION_TOKEN` (photorealistic 3D), `AISSTREAM_API_KEY`
+  (ships) or `FIRMS_MAP_KEY` (fires), then save. Render redeploys
+  automatically. The README's [API Keys](README.md#-api-keys) section shows
+  where to get each one.
+- **Features that don't work in the cloud:** voice, Google search, TomTom
+  traffic speeds and Mapillary street photos. The app refuses those requests
+  whenever they pass through a hosting provider's proxy, as a deliberate
+  security choice (see [SECURITY.md](SECURITY.md)). Use Option B if you want
+  them.
+- **Changing the password:** edit `GEV_ACCESS_PASSWORD` in Render. Every
+  device is signed out and has to type the new password.
+
+---
+
+## Option B: Your own computer, over Tailscale
+
+Your computer runs the app, and the iPhone opens it over
+[Tailscale](https://tailscale.com), a free private network for your own
+devices. It works on Wi-Fi or cellular. Only devices signed in to your
+Tailscale account can open the link, and Tailscale also gives the page the
+HTTPS certificate that iPhone Safari needs before it will use the microphone.
+
+### One-time setup
+
+#### 1. On your computer (Mac, Windows or Linux)
 
 1. Install **Node.js 24** (24.14 or later) from [nodejs.org](https://nodejs.org).
 2. Get the app:
@@ -40,12 +82,12 @@ microphone for voice control.
 4. Open the [Tailscale admin DNS page](https://login.tailscale.com/admin/dns)
    and turn on **MagicDNS** and **HTTPS Certificates**.
 
-### 2. On your iPhone
+#### 2. On your iPhone
 
 1. Install **Tailscale** from the App Store.
 2. Sign in with the **same account** you used on the computer, and switch it on.
 
-### 3. Optional: add API keys
+#### 3. Optional: add API keys
 
 The app works without keys. To add some (Cesium ion for photorealistic 3D,
 OpenAI for voice, and others), run `npm run dev` on the computer, open
@@ -56,9 +98,7 @@ README's [API Keys](README.md#-api-keys) section describes each key.
 You can't add keys from the phone. The key panel only answers on the computer
 itself, so a stolen phone or a shared link can't change them.
 
----
-
-## Every time you want to use it
+### Every time you want to use it
 
 1. On the computer:
    ```bash
@@ -136,6 +176,10 @@ npm ci
 
 ## What was changed for iPhone
 
+- `render.yaml` and `scripts/cloud-start.mjs` (`npm run cloud`): the Render
+  blueprint, and a launcher that serves the built app behind a password
+  (`GEV_ACCESS_PASSWORD`, a sign-in cookie that lasts a year). The launcher
+  won't start without a password, because a cloud URL is public.
 - `scripts/iphone-start.mjs` (`npm run iphone`): finds Tailscale, gets this
   machine's `*.ts.net` certificate, builds the app, and serves it over HTTPS
   on the Tailscale address only.

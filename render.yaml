@@ -1,0 +1,20 @@
+# One-tap cloud deploy on Render (https://render.com) — see IPHONE.md.
+# The build runs on Render's build machines; the running server needs ~150 MB.
+services:
+  - type: web
+    name: gods-eye
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run cloud
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 24.14.0
+      # Puppeteer only drives the QA scripts; skip its Chromium download.
+      - key: PUPPETEER_SKIP_DOWNLOAD
+        value: "true"
+      # Render asks for this when you create the service. Pick 8+ characters;
+      # you type it once on the phone.
+      - key: GEV_ACCESS_PASSWORD
+        sync: false
