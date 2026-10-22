@@ -532,7 +532,7 @@ test('the showcase installs after Wainwright with a look and layers per act', ()
     assert.equal(scenes[index - 1].id, 'wainwright-fire-2026');
     const shots = scenes[index].shots;
     assert.deepEqual(shots.map(({ visual }) => visual.style), [
-      'normal', 'retro', 'thermal', 'normal', 'normal', 'normal', 'surveillance', 'anime',
+      'normal', 'retro', 'thermal', 'normal', 'normal', 'surveillance', 'anime',
     ]);
     assert.deepEqual(shots[0].layers.satellites, { enabled: true, params: { catalog: 'dense' } });
     // At most 1 min 30 s, even before layer start-up.

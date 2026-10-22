@@ -118,8 +118,20 @@ export function celestrakProxy() {
                 return fresh;
               })
               .catch((err) => {
+                // A bounded reason tells a blocked host (HTTP 403/429) from a
+                // timeout or an outage. Only our own fixed messages are
+                // echoed: a raw network error can carry internal detail.
+                const message = String(err?.message || '');
+                const reason =
+                  err?.name === 'TimeoutError'
+                    ? 'timeout'
+                    : /^HTTP \d{3}$/.test(message)
+                      ? message
+                      : message === 'no TLE lines in response'
+                        ? 'no TLE data'
+                        : 'network error';
                 console.warn(
-                  '[celestrak-proxy] refresh failed — serving cache if any',
+                  `[celestrak-proxy] refresh failed for ${group} (${reason}) — serving cache if any`,
                 );
                 return null;
               })

@@ -839,7 +839,6 @@ const SHOWCASE_LAYERS = Object.freeze([
   'wind',
   'weather-lightning',
   'weather-cyclones',
-  'telegeography-submarine-cables',
   'traffic',
   'transit',
   'cctv',
@@ -850,11 +849,13 @@ const showcaseLayers = (...enabled) =>
 const GODS_EYE_SHOWCASE_RECIPE = Object.freeze({
   id: 'gods-eye-showcase',
   // Bump on any change: an untouched older copy in a saved project is
-  // replaced (see `replaceOlderVersions`).
-  version: 2,
+  // replaced (see `replaceOlderVersions`). Version 3 drops the undersea
+  // cables act: that layer alone added ~140 MB of JS heap, enough for iOS
+  // to kill and reload the tab mid-scene.
+  version: 3,
   replaceOlderVersions: true,
   title: msg("God's Eye Showcase"),
-  durationSec: 72,
+  durationSec: 64,
   style: 'normal',
   ui: { hidePanels: true, hudMode: 'minimal', safeFrame: '16:9' },
   layers: Object.fromEntries(
@@ -937,19 +938,6 @@ const GODS_EYE_SHOWCASE_RECIPE = Object.freeze({
       duration: 4,
       hold: 6,
       layers: showcaseLayers('wind', 'weather-lightning', 'weather-cyclones'),
-    },
-    {
-      title: msg('Hidden Wires'),
-      caption: msg(
-        'The undersea cables that carry almost all intercontinental internet traffic.',
-      ),
-      lat: 38,
-      lon: -35,
-      alt: 8000000,
-      pitch: -78,
-      duration: 4,
-      hold: 4,
-      layers: showcaseLayers('telegeography-submarine-cables'),
     },
     {
       title: msg('Austin Approach'),
@@ -1441,7 +1429,6 @@ const BUILTIN_SHOT_TITLES = new Set([
   msg('Sky Traffic'),
   msg('Restless Planet'),
   msg('Weather Machine'),
-  msg('Hidden Wires'),
   msg('Austin Approach'),
   msg('Street Cameras'),
   msg('Pull Back'),
