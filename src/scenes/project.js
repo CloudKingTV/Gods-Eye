@@ -121,6 +121,13 @@ export function recipeToScene(recipe) {
     }
     const mapStack = keyframe.mapStack || post.mapStack;
     return {
+      // Data-pack shots: which of the scene's packs load, and their cards.
+      ...(Array.isArray(keyframe.dataPackIds)
+        ? { dataPackIds: [...keyframe.dataPackIds] }
+        : {}),
+      ...(Array.isArray(keyframe.interactions)
+        ? { interactions: deepClone(keyframe.interactions) }
+        : {}),
       id: uid('shot'),
       // i18n-ignore: persisted fallback; legacy bootstrap matches 'Shot N'
       title: keyframe.title || `Shot ${idx + 1}`,
@@ -174,6 +181,8 @@ export function recipeToScene(recipe) {
     id: recipe.id || uid('scene'),
     // i18n-ignore: persisted fallback; built-in titles display through director
     title: recipe.title || 'Untitled Scene',
+    ...(recipe.dataPacks ? { dataPacks: deepClone(recipe.dataPacks) } : {}),
+    ...(recipe.anchors ? { anchors: deepClone(recipe.anchors) } : {}),
     releaseLayerIds: [
       ...new Set(
         (Array.isArray(recipe.releaseLayerIds)

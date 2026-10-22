@@ -31,6 +31,11 @@ test('Home Screen icons and the sign-in route are reachable before sign-in', () 
   for (const url of ['/manifest.webmanifest', '/icons/icon-180.png', '/logo.svg'])
     assert.equal(gateDecision({ method: 'GET', url, cookie: '', token }), 'pass');
   assert.equal(gateDecision({ method: 'GET', url: '/icons/../.env', cookie: '', token }), 'deny');
+  // Scene assets load with credentials omitted, so they cannot need the cookie.
+  for (const url of ['/scene-assets/wainwright-2026/after-2026-10-19.png', '/scene-assets/wainwright-2026/burn-scar.json'])
+    assert.equal(gateDecision({ method: 'GET', url, cookie: '', token }), 'pass');
+  for (const url of ['/scene-assets/../.env', '/scene-assets/a/b/c.json', '/scene-assets/x/readme.md'])
+    assert.equal(gateDecision({ method: 'GET', url, cookie: '', token }), 'deny', url);
   assert.equal(gateDecision({ method: 'POST', url: LOGIN_PATH, cookie: '', token }), 'login');
   assert.equal(gateDecision({ method: 'GET', url: LOGIN_PATH, cookie: '', token }), 'page');
 });

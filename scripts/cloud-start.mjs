@@ -31,12 +31,20 @@ const COOKIE_MAX_AGE = 365 * 24 * 60 * 60;
 const MAX_LOGIN_BODY = 4096;
 const LOGIN_FAILURE_DELAY_MS = 1000;
 
-/** Paths Safari fetches for Add to Home Screen before anyone signs in. */
-const PUBLIC_PATHS = /^\/(?:manifest\.webmanifest|favicon\.ico|logo\.svg|icons\/[\w.-]+\.png)$/;
+/**
+ * Paths served without the cookie: what Safari fetches for Add to Home Screen
+ * before anyone signs in, and scene data-pack assets, which the Director
+ * fetches with `credentials: 'omit'` (src/director/packs/source.js). Both are
+ * static public files that broker no keys.
+ */
+const PUBLIC_PATHS =
+  /^\/(?:manifest\.webmanifest|favicon\.ico|logo\.svg|icons\/[\w.-]+\.png|scene-assets\/[\w-]+\/[\w-]+\.(?:png|json|geojson|mp4|webm|mp3|ogg|wav))$/;
 
 /** The cookie value a password grants; changing the password revokes it. */
 export function accessToken(password) {
-  return createHmac('sha256', String(password)).update('gev-access-v1').digest('hex');
+  return createHmac('sha256', String(password))
+    .update('gev-access-v1')
+    .digest('hex');
 }
 
 function safeEqual(a, b) {
@@ -49,7 +57,8 @@ function safeEqual(a, b) {
 export function readCookie(header, name) {
   for (const part of String(header ?? '').split(';')) {
     const eq = part.indexOf('=');
-    if (eq !== -1 && part.slice(0, eq).trim() === name) return part.slice(eq + 1).trim();
+    if (eq !== -1 && part.slice(0, eq).trim() === name)
+      return part.slice(eq + 1).trim();
   }
   return '';
 }
@@ -63,7 +72,11 @@ export function gateDecision({ method, url, cookie, token }) {
   if (pathname === LOGIN_PATH) return method === 'POST' ? 'login' : 'page';
   if (safeEqual(readCookie(cookie, ACCESS_COOKIE), token)) return 'pass';
   if (method === 'GET' && PUBLIC_PATHS.test(pathname)) return 'pass';
-  if (method === 'GET' && !pathname.startsWith('/api') && !/\.\w+$/.test(pathname))
+  if (
+    method === 'GET' &&
+    !pathname.startsWith('/api') &&
+    !/\.\w+$/.test(pathname)
+  )
     return 'page';
   return 'deny';
 }
@@ -149,7 +162,10 @@ export function accessGatePlugin(password) {
         return res.end();
       }
       // Slow guessing down; the password is the only thing guarding the keys.
-      setTimeout(() => sendPage(res, 401, 'Wrong password.'), LOGIN_FAILURE_DELAY_MS);
+      setTimeout(
+        () => sendPage(res, 401, 'Wrong password.'),
+        LOGIN_FAILURE_DELAY_MS,
+      );
     });
   };
   return {
@@ -170,7 +186,10 @@ async function start() {
     );
 
   // Render names the public hostname; GEV_PUBLIC_HOST covers other hosts.
-  for (const name of [process.env.RENDER_EXTERNAL_HOSTNAME, process.env.GEV_PUBLIC_HOST])
+  for (const name of [
+    process.env.RENDER_EXTERNAL_HOSTNAME,
+    process.env.GEV_PUBLIC_HOST,
+  ])
     if (String(name ?? '').trim())
       process.env.GEV_ALLOWED_HOSTS = withAllowedHost(
         process.env.GEV_ALLOWED_HOSTS,

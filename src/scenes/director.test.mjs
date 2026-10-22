@@ -18,6 +18,7 @@ import test from 'node:test';
 import { SceneDirector } from './director.js';
 import { SCENE_TRACKING_PARAM_KEYS } from './scenePolicy.js';
 import { SCENE_RECIPES, getSceneAppendRecipeById } from './recipes.js';
+import { parseSceneDocument } from '../director/document.js';
 
 const NEPAL_ORIGINAL_SHOT_TITLES = [
   'Global Incident Context',
@@ -467,7 +468,10 @@ test('an older default project gains the complete selectable Nepal scene once', 
     assert.equal(nepal.shots.length, 25);
     assert.equal(nepal.shots[0].title, 'Global Incident Context');
     assert.equal(nepal.shots.at(-1).title, 'Final view');
-    assert.deepEqual(director._project.installedBuiltInSceneIds, ['bhote-koshi-nepal-scene']);
+    assert.deepEqual(director._project.installedBuiltInSceneIds, [
+      'bhote-koshi-nepal-scene',
+      'wainwright-fire-2026',
+    ]);
   } finally {
     restore();
   }
@@ -503,7 +507,29 @@ test('an existing public default project gains Nepal without replacing authored 
       original.map(({ id, camera }) => ({ id, camera })));
     assert.equal(director._project.scenes[1].title, 'Nepal Flood Incident');
     assert.equal(director._project.scenes[1].shots.length, 25);
-    assert.deepEqual(director._project.installedBuiltInSceneIds, ['bhote-koshi-nepal-scene']);
+    assert.deepEqual(director._project.installedBuiltInSceneIds, [
+      'bhote-koshi-nepal-scene',
+      'wainwright-fire-2026',
+    ]);
+  } finally { restore(); }
+});
+
+test('an existing project gains the Wainwright Fire scene after Nepal, with its packs and cards', () => {
+  const project = structuredClone(PROJECT_FIXTURE);
+  project.scenes[0].id = 'flights-radar';
+  const { director, restore } = makeDirector({ project });
+  try {
+    const scenes = director._project.scenes;
+    const index = scenes.findIndex(({ id }) => id === 'wainwright-fire-2026');
+    assert.equal(scenes[index - 1].title, 'Nepal Flood Incident');
+    const scene = scenes[index];
+    assert.deepEqual(scene.dataPacks.map(({ id }) => id), ['before', 'after', 'outline']);
+    assert.equal(scene.shots.length, 7);
+    for (const shot of scene.shots)
+      for (const item of shot.interactions ?? [])
+        assert.ok(shot.dataPackIds.includes(item.target.packId), `${shot.title}: ${item.id}`);
+    // The saved document validates with the new scene in it.
+    assert.doesNotThrow(() => parseSceneDocument(JSON.stringify(director._project)));
   } finally { restore(); }
 });
 

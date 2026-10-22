@@ -243,3 +243,47 @@ body.phone-shell #corner-actions {
   bottom: auto !important;
   left: 60px !important;
 }
+
+/* ── Director overlays (src/scenes/interactions.js, dataPacks/presentation.js)
+   carry desktop inline geometry. On a phone, scene actions go to the top
+   under the globe actions, data-pack attribution to the bottom above the map
+   credit, and the HUD corners step aside while actions are showing. ── */
+body.phone-shell [data-director-interactions] {
+  top: var(--phone-sheet-top) !important;
+  right: 8px !important;
+  bottom: auto !important;
+  left: 8px !important;
+  max-width: none !important;
+  max-height: 30vh !important;
+  padding: 8px !important;
+  font-size: 12px !important;
+}
+
+body.phone-shell [data-director-interactions] p {
+  margin: 4px 0;
+}
+
+body.phone-shell [data-director-interactions] button {
+  display: inline-block !important;
+  margin: 4px 6px 0 0 !important;
+  padding: 6px 8px !important;
+}
+
+body.phone-shell:has([data-director-interactions]) #intel-hud .hud-corner {
+  display: none !important;
+}
+
+body.phone-shell [data-director-packs] {
+  top: auto !important;
+  right: 8px !important;
+  bottom: var(--phone-sheet-bottom) !important;
+  left: 8px !important;
+  max-height: 20vh !important;
+}
+
+body.phone-shell [data-director-packs] > section {
+  max-width: none !important;
+  margin: 2px 0 !important;
+  padding: 4px 6px !important;
+  font-size: 10px !important;
+}

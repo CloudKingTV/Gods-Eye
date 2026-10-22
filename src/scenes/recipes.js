@@ -617,7 +617,198 @@ const BHOTE_KOSHI_NEPAL_BOOTSTRAP_RECIPE = BHOTE_KOSHI_NEPAL_APPEND_RECIPE
     })
   : null;
 
-const EVENT_RECIPES = [BHOTE_KOSHI_NEPAL_BOOTSTRAP_RECIPE].filter(Boolean);
+// CFB Wainwright fire, 17 Oct 2026. A data-only event: Sentinel-2 before/after
+// crops, an outline derived from them and two reference points, all served
+// from public/scene-assets/wainwright-2026 (see its README for provenance and
+// interpretation limits).
+const WAINWRIGHT_IMAGE_BOUNDS = Object.freeze([-111.0, 52.715, -110.8, 52.845]);
+const WAINWRIGHT_OVERLAY_HEIGHT = 740;
+const SENTINEL_ATTRIBUTION = Object.freeze({
+  text: 'Contains modified Copernicus Sentinel data 2026',
+  license: 'Copernicus Sentinel data terms (free, full and open)',
+  url: 'https://sentinels.copernicus.eu/documents/247904/690755/Sentinel_Data_Legal_Notice',
+});
+const WAINWRIGHT_TIMELINE_URL =
+  'https://globalnews.ca/news/12107726/cfb-wainwright-timeline/';
+const WAINWRIGHT_DND_URL =
+  'https://www.canada.ca/en/department-national-defence/news/2026/10/incident-at-canadian-forces-base-wainwright.html';
+
+const WAINWRIGHT_CARDS = Object.freeze([
+  {
+    id: 'about-camp',
+    // i18n-ignore: authored scene data, shown as stored
+    label: 'Camp Wainwright',
+    target: { packId: 'outline', featureId: 'camp-wainwright' },
+    action: {
+      type: 'card',
+      text: 'Camp Wainwright, CFB Wainwright, Alberta. On 17 October 2026, at about 4 p.m. local time, a grass fire started in the training area during live-fire training (Exercise APOLLO SHOOTER). High winds drove it quickly over a unit administrative area. Four Canadian Armed Forces members were killed and dozens were injured. The Municipal District of Wainwright reported the fire held just after 10:45 p.m. The cause is under investigation. Marker: approximate centre of the built-up camp area, read from the satellite image.',
+      url: WAINWRIGHT_TIMELINE_URL,
+    },
+  },
+  {
+    id: 'about-scar',
+    // i18n-ignore: authored scene data, shown as stored
+    label: 'Burn scar estimate',
+    target: { packId: 'outline', featureId: 'burn-scar' },
+    action: {
+      type: 'card',
+      text: 'Unofficial burn-scar estimate, not a fire perimeter. Traced where the Normalized Burn Ratio dropped by more than 0.27 between the cloud-masked Sentinel-2 images of 4 and 19 October 2026: about 1,120 ha in this area plus about 107 ha west of the lake (about 12 km² in total), spanning 6.3 km west-northwest to east-southeast. Thin cloud covers the eastern edge on 19 October, so burned ground there may be missed. The darker area south of the lake is an older scar that already appears on 4 October. The ignition point and the direction of spread are not known from these images.',
+      url: WAINWRIGHT_DND_URL,
+    },
+  },
+  {
+    id: 'about-scar-west',
+    // i18n-ignore: authored scene data, shown as stored
+    label: 'West of the lake',
+    target: { packId: 'outline', featureId: 'burn-scar-2' },
+    action: {
+      type: 'card',
+      text: 'A second patch of new burn signal, about 107 ha, on the west shore of the lake. Same method and limits as the main outline.',
+    },
+  },
+]);
+
+const WAINWRIGHT_FIRE_RECIPE = Object.freeze({
+  id: 'wainwright-fire-2026',
+  version: 1,
+  title: msg('Wainwright Fire'),
+  durationSec: 40,
+  style: 'normal',
+  ui: { hidePanels: false, hudMode: 'minimal', safeFrame: '16:9' },
+  layers: {},
+  post: {
+    bloom: 0,
+    sharpen: true,
+    detectionMode: 'OFF',
+    mapStack: 'esri-imagery',
+  },
+  installAlongsideSceneId: 'bhote-koshi-nepal-scene',
+  installAlongsideFallbackSceneId: 'flights-radar',
+  dataPacks: [
+    {
+      id: 'before',
+      version: 1,
+      format: 'image',
+      source: {
+        adapter: 'assets',
+        path: 'wainwright-2026/before-2026-10-04.png',
+      },
+      attribution: SENTINEL_ATTRIBUTION,
+      placement: {
+        bounds: [...WAINWRIGHT_IMAGE_BOUNDS],
+        height: WAINWRIGHT_OVERLAY_HEIGHT,
+        altitudeReference: 'ellipsoid',
+      },
+    },
+    {
+      id: 'after',
+      version: 1,
+      format: 'image',
+      source: {
+        adapter: 'assets',
+        path: 'wainwright-2026/after-2026-10-19.png',
+      },
+      attribution: SENTINEL_ATTRIBUTION,
+      placement: {
+        bounds: [...WAINWRIGHT_IMAGE_BOUNDS],
+        height: WAINWRIGHT_OVERLAY_HEIGHT,
+        altitudeReference: 'ellipsoid',
+      },
+    },
+    {
+      id: 'outline',
+      version: 1,
+      format: 'geojson',
+      source: { adapter: 'assets', path: 'wainwright-2026/burn-scar.json' },
+      attribution: {
+        text: 'Burn-scar outline derived from modified Copernicus Sentinel data 2026',
+        license: 'Copernicus Sentinel data terms (free, full and open)',
+      },
+      placement: { altitudeReference: 'ellipsoid' },
+    },
+  ],
+  cameraPath: [
+    {
+      title: msg('Alberta Overview'),
+      lat: 53.4,
+      lon: -113.0,
+      alt: 1400000,
+      pitch: -90,
+      duration: 5,
+      hold: 1.5,
+    },
+    {
+      title: msg('CFB Wainwright Training Area'),
+      lat: 52.78,
+      lon: -110.9,
+      alt: 42000,
+      pitch: -90,
+      duration: 6,
+      hold: 2,
+      dataPackIds: ['outline'],
+      interactions: WAINWRIGHT_CARDS,
+    },
+    {
+      title: msg('Before: 4 Oct 2026'),
+      lat: 52.775,
+      lon: -110.9,
+      alt: 19000,
+      pitch: -90,
+      duration: 3,
+      hold: 4,
+      dataPackIds: ['before'],
+    },
+    {
+      title: msg('After: 19 Oct 2026'),
+      lat: 52.775,
+      lon: -110.9,
+      alt: 19000,
+      pitch: -90,
+      duration: 1,
+      hold: 4,
+      dataPackIds: ['after'],
+    },
+    {
+      title: msg('Burn Scar Outline'),
+      lat: 52.765,
+      lon: -110.9,
+      alt: 13000,
+      pitch: -90,
+      duration: 2.5,
+      hold: 5,
+      dataPackIds: ['after', 'outline'],
+      interactions: WAINWRIGHT_CARDS,
+    },
+    {
+      title: msg('Burn Scar Over Before Image'),
+      lat: 52.765,
+      lon: -110.9,
+      alt: 13000,
+      pitch: -90,
+      duration: 1,
+      hold: 4,
+      dataPackIds: ['before', 'outline'],
+      interactions: WAINWRIGHT_CARDS,
+    },
+    {
+      title: msg('Low-Angle Scar View'),
+      lat: 52.705,
+      lon: -110.83,
+      alt: 5200,
+      heading: 300,
+      pitch: -28,
+      duration: 6,
+      hold: 4,
+      dataPackIds: ['after', 'outline'],
+      interactions: WAINWRIGHT_CARDS,
+    },
+  ],
+});
+
+const EVENT_RECIPES = [
+  BHOTE_KOSHI_NEPAL_BOOTSTRAP_RECIPE,
+  WAINWRIGHT_FIRE_RECIPE,
+].filter(Boolean);
 
 const PUBLIC_SCENE_RECIPES = [
   {
@@ -1016,6 +1207,13 @@ export function getSceneAppendRecipeById(id) {
 // and bindings match them verbatim). These are their display names; a title
 // the user typed shows as typed. Place names inside them stay Latin.
 const BUILTIN_SHOT_TITLES = new Set([
+  msg('Alberta Overview'),
+  msg('CFB Wainwright Training Area'),
+  msg('Before: 4 Oct 2026'),
+  msg('After: 19 Oct 2026'),
+  msg('Burn Scar Outline'),
+  msg('Burn Scar Over Before Image'),
+  msg('Low-Angle Scar View'),
   msg('Global Incident Context'),
   msg('Nepal-Focused Globe Rotation'),
   msg('Bhote Koshi Regional Approach'),
