@@ -96,6 +96,11 @@ body.phone-shell #right-context-rail {
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  /* The desktop rails are pointer-transparent over the globe, and iOS will
+     not scroll a pointer-events:none scroller by touch. Here a rail is only
+     displayed while it holds the open sheet, so it can take the touches. */
+  pointer-events: auto;
   z-index: 160;
 }
 
