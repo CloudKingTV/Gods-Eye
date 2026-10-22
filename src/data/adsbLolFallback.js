@@ -103,7 +103,9 @@ export function normalizeAdsbLolPointResponse(payload) {
       : Math.floor(
           responseNow > 10_000_000_000 ? responseNow / 1000 : responseNow,
         );
-  const aircraft = Array.isArray(payload?.ac) ? payload.ac : [];
+  // adsb.lol names the list `ac`; adsb.fi's open-data feed, `aircraft`.
+  const rows = payload?.ac ?? payload?.aircraft;
+  const aircraft = Array.isArray(rows) ? rows : [];
   const states = [];
   // Keep the OpenSky vectors unchanged. The regional fallback's extra readsb
   // status travels alongside them, keyed only to admitted aircraft.

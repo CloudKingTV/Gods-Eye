@@ -83,3 +83,52 @@ test('civil acquisition publishes source time and uses a replaced source on the 
   assert.deepEqual(probe.labels, ['First', 'Second']);
   assert.equal(probe.restores.length, 2);
 });
+
+test('a regional snapshot asks for a refetch once the camera settles far away', async () => {
+  let camera = { latitude: 20, longitude: -40 };
+  const feed = {
+    _source: {
+      getSnapshot: async () => ({
+        status: 200,
+        source: 'adsb.fi',
+        coverage: '250nm regional fallback',
+        observedAtMs: Date.now(),
+        states: [],
+      }),
+    },
+    _activeUpdateControllers: new Set(),
+    _trackingRefreshEpoch: 0,
+    _lastSource: 'Flights',
+    _lastCoverage: 'worldwide upstream snapshot',
+    _retryAt: 0,
+  };
+  const { methods } = createIngestion({
+    feed,
+    getQuery: () => camera,
+    applySnapshot: () => ({ count: 0, ids: new Set() }),
+    setSourceLabel: () => {},
+    applyPendingTrackingRestore: () => {},
+  });
+  assert.equal(methods.regionalAnchorMoved(null), false, 'nothing fetched yet');
+  await methods.update(null);
+  assert.equal(
+    methods.regionalAnchorMoved(null),
+    false,
+    'camera still at the anchor',
+  );
+  camera = { latitude: 20.5, longitude: -40.5 };
+  assert.equal(
+    methods.regionalAnchorMoved(null),
+    false,
+    'a short pan stays inside the snapshot',
+  );
+  camera = { latitude: 39.5, longitude: -75.5 };
+  assert.equal(
+    methods.regionalAnchorMoved(null),
+    true,
+    'flown across the ocean',
+  );
+  // A worldwide snapshot never needs it.
+  feed._lastCoverage = 'worldwide upstream snapshot';
+  assert.equal(methods.regionalAnchorMoved(null), false);
+});

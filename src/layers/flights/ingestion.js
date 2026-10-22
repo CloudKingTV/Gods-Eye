@@ -4,6 +4,21 @@ import { ERROR_BACKOFF_INTERVAL } from './recordPolicy.js';
 // local: this module stays free of browser globals (package boundaries).
 const msg = (text) => text;
 
+const REGIONAL_REFRESH_KM = 150;
+
+/** Great-circle distance between two {latitude, longitude} points. */
+function distanceKm(a, b) {
+  const rad = Math.PI / 180;
+  const dLat = (b.latitude - a.latitude) * rad;
+  const dLon = (b.longitude - a.longitude) * rad;
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(a.latitude * rad) *
+      Math.cos(b.latitude * rad) *
+      Math.sin(dLon / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
 /** Own acquisition, cancellation, freshness and backoff independently of rendering. */
 export function createIngestion({
   feed,
@@ -13,6 +28,26 @@ export function createIngestion({
   applyPendingTrackingRestore,
 }) {
   const methods = {
+    /**
+     * Whether the camera has settled far from the anchor of the last
+     * regional snapshot. A fallback feed covers ~250 nm around the camera it
+     * was asked for, and the poll runs every 30 s, so a scene shot that flies
+     * across the planet would otherwise hold over an empty map.
+     * @returns {boolean}
+     */
+    regionalAnchorMoved(viewer) {
+      const anchor = feed._lastQueryAnchor;
+      if (!anchor || !/regional/i.test(String(feed._lastCoverage || '')))
+        return false;
+      const query = getQuery(viewer);
+      if (
+        !Number.isFinite(query?.latitude) ||
+        !Number.isFinite(query?.longitude)
+      )
+        return false;
+      return distanceKm(anchor, query) > REGIONAL_REFRESH_KM;
+    },
+
     async update(viewer, { signal = null } = {}) {
       const nowMs = Date.now();
       const trackingRefreshEpoch = ++feed._trackingRefreshEpoch;
@@ -35,7 +70,8 @@ export function createIngestion({
         : resourceController.signal;
       try {
         updateSignal.throwIfAborted();
-        const snapshot = await feed._source.getSnapshot(getQuery(viewer), {
+        const query = getQuery(viewer);
+        const snapshot = await feed._source.getSnapshot(query, {
           signal: updateSignal,
         });
         updateSignal.throwIfAborted();
@@ -53,6 +89,7 @@ export function createIngestion({
           : null;
         feed._lastSource = snapshot.source;
         feed._lastCoverage = snapshot.coverage;
+        feed._lastQueryAnchor = Number.isFinite(query?.latitude) ? query : null;
         setSourceLabel(feed._lastSource);
         const accepted = applySnapshot(snapshot, viewer);
         feed._count = accepted.count;
@@ -107,6 +144,7 @@ export function createFlightFeed(source) {
   feed._lastStatus = null;
   feed._lastSource = source?.label || 'Aircraft';
   feed._lastCoverage = 'worldwide upstream snapshot';
+  feed._lastQueryAnchor = null;
   feed._trackingRefreshEpoch = 0;
   feed._lastTrackingRefreshOutcome = {
     epoch: 0,

@@ -1,9 +1,9 @@
 import { createApplicationSatellites } from '../app/layers/satellites.js';
 import { createSourceSlot } from '../sources/sourceSlot.js';
-import { createSatelliteSource } from '../layers/satellites/index.js';
+import { createBrowserSatelliteSource } from '../layers/satellites/index.js';
 
 const sourceSlot = createSourceSlot(
-  createSatelliteSource(),
+  createBrowserSatelliteSource(),
   ['readGroup'],
   'Satellite source',
 );

@@ -49,3 +49,11 @@ test('keeps grounded fallback contacts and rejects rows without positions', () =
   assert.equal(normalized.states[0][7], null);
   assert.equal(normalized.states[0][8], true);
 });
+
+test('adsb.fi open-data responses (aircraft list) normalize like adsb.lol', () => {
+  const row = { hex: 'ABC123', flight: 'TEST1 ', lat: 40, lon: -75, alt_baro: 30000, gs: 400, track: 90 };
+  const fromFi = normalizeAdsbLolPointResponse({ now: 1792705686.001, aircraft: [row] });
+  const fromLol = normalizeAdsbLolPointResponse({ now: 1792705686.001, ac: [row] });
+  assert.equal(fromFi.states.length, 1);
+  assert.deepEqual(fromFi, fromLol);
+});

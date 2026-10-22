@@ -1155,6 +1155,7 @@
       "src/layers/satellites/policy.js",
       "src/layers/satellites/rendering.js",
       "src/layers/satellites/source.js",
+      "src/data/spaceProviderRequests.js",
       "src/layers/satellites/state.js",
       "src/layers/satellites/testing.js",
       "src/layers/satellites/tracking.js",
@@ -2055,6 +2056,7 @@
       "src/layers/satellites/policy.js",
       "src/layers/satellites/rendering.js",
       "src/layers/satellites/source.js",
+      "src/data/spaceProviderRequests.js",
       "src/layers/satellites/state.js",
       "src/layers/satellites/testing.js",
       "src/layers/satellites/tracking.js",
@@ -2843,6 +2845,7 @@
       "src/layers/satellites/policy.js",
       "src/layers/satellites/rendering.js",
       "src/layers/satellites/source.js",
+      "src/data/spaceProviderRequests.js",
       "src/layers/satellites/state.js",
       "src/layers/satellites/testing.js",
       "src/layers/satellites/tracking.js",
@@ -3494,7 +3497,10 @@
   },
   "satellites-source": {
     "exports": ["./layers/satellites/source"],
-    "modules": ["src/layers/satellites/source.js"],
+    "modules": [
+      "src/layers/satellites/source.js",
+      "src/data/spaceProviderRequests.js"
+    ],
     "external": []
   },
   "traffic-source-factory": {
@@ -3911,6 +3917,7 @@
       "src/layers/radio/source.js",
       "src/layers/radio/policy.js",
       "src/layers/satellites/source.js",
+      "src/data/spaceProviderRequests.js",
       "src/layers/traffic/source.js",
       "src/layers/traffic/roadModes.js",
       "src/data/flowMatch.js",

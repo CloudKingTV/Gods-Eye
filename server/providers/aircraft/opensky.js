@@ -321,39 +321,56 @@ async function fetchAdsbLolPointFallback(req) {
     _adsbLolPointInFlight,
     cacheKey,
     async () => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-      try {
-        const upstream = await fetch(
-          `https://api.adsb.lol/v2/lat/${roundedLat}/lon/${roundedLon}/dist/${ADSBLOL_POINT_RADIUS_NM}`,
-          {
+      // adsb.lol first, then adsb.fi's open-data feed (same readsb records):
+      // a shared cloud address can exhaust one free feed's allowance.
+      const providers = [
+        {
+          source: 'adsb.lol',
+          url: `https://api.adsb.lol/v2/lat/${roundedLat}/lon/${roundedLon}/dist/${ADSBLOL_POINT_RADIUS_NM}`,
+        },
+        {
+          source: 'adsb.fi',
+          url: `https://opendata.adsb.fi/api/v2/lat/${roundedLat}/lon/${roundedLon}/dist/${ADSBLOL_POINT_RADIUS_NM}`,
+        },
+      ];
+      let lastError = null;
+      for (const provider of providers) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        try {
+          const upstream = await fetch(provider.url, {
             headers: {
               Accept: 'application/json',
               'User-Agent': 'gods-eye-view-adsblol-regional-fallback/1.0',
             },
             signal: controller.signal,
-          },
-        );
-        if (!upstream.ok) throw new Error(`upstream HTTP ${upstream.status}`);
-        const payload = await readResponseJsonCapped(
-          upstream,
-          ADSBLOL_POINT_MAX_RESPONSE_BYTES,
-        );
-        const normalized = normalizeAdsbLolPointResponse(payload);
-        const record = {
-          body: JSON.stringify(normalized),
-          cachedAt: Date.now(),
-          count: normalized.states.length,
-        };
-        _adsbLolPointCache.delete(cacheKey);
-        _adsbLolPointCache.set(cacheKey, record);
-        while (_adsbLolPointCache.size > ADSBLOL_POINT_CACHE_MAX) {
-          _adsbLolPointCache.delete(_adsbLolPointCache.keys().next().value);
+          });
+          if (!upstream.ok)
+            throw new Error(`${provider.source} HTTP ${upstream.status}`);
+          const payload = await readResponseJsonCapped(
+            upstream,
+            ADSBLOL_POINT_MAX_RESPONSE_BYTES,
+          );
+          const normalized = normalizeAdsbLolPointResponse(payload);
+          const record = {
+            body: JSON.stringify(normalized),
+            cachedAt: Date.now(),
+            count: normalized.states.length,
+            source: provider.source,
+          };
+          _adsbLolPointCache.delete(cacheKey);
+          _adsbLolPointCache.set(cacheKey, record);
+          while (_adsbLolPointCache.size > ADSBLOL_POINT_CACHE_MAX) {
+            _adsbLolPointCache.delete(_adsbLolPointCache.keys().next().value);
+          }
+          return record;
+        } catch (error) {
+          lastError = error;
+        } finally {
+          clearTimeout(timeoutId);
         }
-        return record;
-      } finally {
-        clearTimeout(timeoutId);
       }
+      throw lastError;
     },
   );
   try {
@@ -377,7 +394,7 @@ async function serveAdsbLolPointFallback(req, res, requestedMode, reason) {
       usedMode: 'adsblol-regional',
       reason,
     }),
-    'X-Flight-Source': 'adsb.lol',
+    'X-Flight-Source': fallback.source || 'adsb.lol',
     'X-Flight-Coverage': `${ADSBLOL_POINT_RADIUS_NM}nm regional fallback`,
     'X-Flight-Count': String(fallback.count),
   });

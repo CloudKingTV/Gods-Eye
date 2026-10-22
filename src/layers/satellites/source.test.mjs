@@ -164,3 +164,92 @@ test('satellite pass prediction methods report no-tle on cold catalog and coerce
     { status: 'no-tle' },
   );
 });
+
+test('a failed proxy read falls back to CelesTrak direct, then to the kept copy', async () => {
+  const TLE =
+    'ISS (ZARYA)\n1 25544U 98067A   26294.04791053  .00009575  00000+0  18188-3 0  9996\n2 25544  51.6327  37.2600 0004000  10.0000 350.0000 15.50000000000000\n';
+  const kept = new Map();
+  const cache = {
+    get: async (group) => kept.get(group) ?? null,
+    put: async (group, text) => kept.set(group, text),
+  };
+  const proxyDown = async () => ({
+    ok: false,
+    status: 502,
+    text: async () => 'celestrak fetch failed',
+    headers: { get: () => 'NONE' },
+  });
+  const direct = [];
+  let directAnswer = { ok: true, status: 200, text: async () => TLE };
+  const source = createSatelliteSource({
+    fetchImpl: proxyDown,
+    directFetchImpl: async (url, options) => {
+      direct.push([url, options.credentials]);
+      return directAnswer;
+    },
+    cache,
+  });
+
+  // Server refused: the browser reads CelesTrak itself and keeps the copy.
+  assert.deepEqual(await source.readGroup('stations'), {
+    ok: true,
+    status: 200,
+    text: TLE,
+    stale: false,
+  });
+  assert.deepEqual(direct, [
+    [
+      'https://celestrak.org/NORAD/elements/gp.php?GROUP=stations&FORMAT=tle',
+      'omit',
+    ],
+  ]);
+  assert.equal(kept.get('stations'), TLE);
+
+  // CelesTrak now refuses this address too (repeat download): the kept copy, marked stale.
+  directAnswer = {
+    ok: false,
+    status: 403,
+    text: async () =>
+      'GP data has not updated since your last successful download',
+  };
+  assert.deepEqual(await source.readGroup('stations'), {
+    ok: true,
+    status: 200,
+    text: TLE,
+    stale: true,
+  });
+
+  // Nothing kept for this group: the proxy's failure stands.
+  const result = await source.readGroup('starlink');
+  assert.equal(result.ok, false);
+  assert.equal(result.status, 502);
+});
+
+test('a working proxy is used as before and its catalog is kept', async () => {
+  const TLE = 'X\n1 00001U\n2 00001\n';
+  const kept = new Map();
+  let directCalls = 0;
+  const source = createSatelliteSource({
+    fetchImpl: async () => ({
+      ok: true,
+      status: 200,
+      text: async () => TLE,
+      headers: { get: () => 'MISS' },
+    }),
+    directFetchImpl: async () => {
+      directCalls++;
+    },
+    cache: {
+      get: async () => null,
+      put: async (group, text) => kept.set(group, text),
+    },
+  });
+  assert.deepEqual(await source.readGroup('geo'), {
+    ok: true,
+    status: 200,
+    text: TLE,
+    stale: false,
+  });
+  assert.equal(directCalls, 0);
+  assert.equal(kept.get('geo'), TLE);
+});

@@ -12,7 +12,7 @@ import { createTransitSource } from '../layers/transit/source.js';
 import { createTrafficSource } from '../layers/traffic/source.js';
 import { createBikeshareSource } from '../layers/bikeshare/source.js';
 import { createInstallationSource } from '../layers/installations/source.js';
-import { createSatelliteSource } from '../layers/satellites/source.js';
+import { createBrowserSatelliteSource } from '../layers/satellites/source.js';
 import { createLaunchSource } from '../layers/launches/source.js';
 import { createAlprTileSource } from '../layers/alpr/source.js';
 import { createWeatherSource } from '../layers/weather/source.js';
@@ -46,7 +46,7 @@ export function createStandaloneLayerSources(overrides = {}) {
     transit: createTransitSource(),
     bikeshare: createBikeshareSource(),
     installations: createInstallationSource({ mapTiles }),
-    satellites: createSatelliteSource(),
+    satellites: createBrowserSatelliteSource(),
     launches: createLaunchSource(),
     alpr: createAlprTileSource(),
     firms: createFirmsSource(),

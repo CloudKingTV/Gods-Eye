@@ -186,6 +186,9 @@ export function createLifecycle({
           () => {
             flightState._lastCamPoseSig = '';
             flightState._lastFleetTickMs = 0;
+            // A regional fallback snapshot only covers where the camera was.
+            if (layer.regionalAnchorMoved?.(viewer))
+              layer.update?.(viewer)?.catch?.(() => {});
           },
         );
       }

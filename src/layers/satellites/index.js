@@ -75,4 +75,7 @@ export function createSatellitesLayer({ services, source }) {
   );
 }
 export { ISS_OVERLAY_SOURCE_ID, ISS_OVERLAY_SOURCE_OPTIONS } from './policy.js';
-export { createSatelliteSource } from './source.js';
+export {
+  createBrowserSatelliteSource,
+  createSatelliteSource,
+} from './source.js';
