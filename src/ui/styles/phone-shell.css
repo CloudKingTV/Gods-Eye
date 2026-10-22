@@ -1,0 +1,240 @@
+/* ── Phone shell (src/ui/phoneShell.js) ──────────────────────────────
+   Applies only while body.phone-shell is set, which the module sets below
+   720px. One tab bar along the bottom; above it, the required map credit;
+   above that, at most one sheet (a rail panel or a dock tray). Everything is
+   !important where the desktop rail layout writes inline geometry. */
+
+#phone-nav {
+  display: none;
+}
+
+body.phone-shell {
+  --phone-nav-height: 54px;
+  --phone-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --phone-credit-band: 26px;
+  --phone-sheet-bottom: calc(
+    var(--phone-nav-height) + var(--phone-safe-bottom) +
+      var(--phone-credit-band) + 6px
+  );
+  --phone-sheet-top: calc(env(safe-area-inset-top, 0px) + 60px);
+}
+
+body.phone-shell #phone-nav {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  /* Under the first-run overlay (175), over the map chrome. */
+  z-index: 170;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  box-sizing: content-box;
+  height: var(--phone-nav-height);
+  padding-bottom: var(--phone-safe-bottom);
+  background: rgba(6, 13, 20, 0.94);
+  border-top: 1px solid rgba(123, 189, 211, 0.22);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+}
+
+.phone-nav-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 0;
+  color: rgba(190, 226, 238, 0.6);
+  background: none;
+  border: 0;
+  font: 500 8px/1 var(--font-mono, monospace);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.phone-nav-tab .material-symbols-outlined {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.phone-nav-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.phone-nav-tab[aria-pressed='true'] {
+  color: #5eeaff;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.45);
+}
+
+.phone-nav-tab:focus-visible {
+  outline: 1px solid #5eeaff;
+  outline-offset: -3px;
+}
+
+/* ── Sheet: the rails collapse onto one scrollable area ── */
+body.phone-shell .phone-sheet-off {
+  display: none !important;
+}
+
+body.phone-shell #left-panel-stack,
+body.phone-shell #right-context-rail {
+  position: fixed !important;
+  top: auto !important;
+  right: 8px !important;
+  bottom: var(--phone-sheet-bottom) !important;
+  left: 8px !important;
+  width: auto !important;
+  max-height: calc(
+    100dvh - var(--phone-sheet-bottom) - var(--phone-sheet-top)
+  ) !important;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  z-index: 160;
+}
+
+body.phone-shell :is(#left-panel-stack, #right-context-rail) > [id],
+body.phone-shell :is(#left-panel-stack, #right-context-rail) > [id].collapsed {
+  position: relative !important;
+  inset: auto !important;
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+}
+
+/* ── Dock: only its open tray shows, as a sheet ── */
+body.phone-shell #command-dock {
+  bottom: var(--phone-sheet-bottom) !important;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Filters and transforms would become the tray's containing block. */
+body.phone-shell #command-dock,
+body.phone-shell #command-dock > *,
+body.phone-shell #command-dock .location-inner,
+body.phone-shell #command-dock .panel-inner {
+  transform: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+}
+
+body.phone-shell #gev-voice-control {
+  display: none !important;
+}
+
+body.phone-shell #command-dock #location-bar .dock-popover-content,
+body.phone-shell #command-dock #control-panel .dock-popover-content {
+  position: fixed;
+  top: auto;
+  right: 8px;
+  bottom: var(--phone-sheet-bottom);
+  left: 8px;
+  width: auto;
+  max-height: calc(100dvh - var(--phone-sheet-bottom) - var(--phone-sheet-top));
+  margin: 0;
+  overflow-y: auto;
+  transform-origin: bottom center;
+}
+
+body.phone-shell
+  #command-dock
+  #location-bar:not(.collapsed)
+  .dock-popover-content,
+body.phone-shell
+  #command-dock
+  #control-panel:not(.collapsed)
+  .dock-popover-content {
+  visibility: visible;
+}
+
+body.phone-shell #command-dock .dock-popover-content::after {
+  display: none;
+}
+
+/* The tab already keeps its tray open, so pinning has nothing to add. */
+body.phone-shell #command-dock .dock-pin-btn {
+  display: none !important;
+}
+
+/* Search gets a full-width row; the city chips and preset buttons wrap
+   instead of scrolling sideways. */
+body.phone-shell #command-dock .dock-popover-content .location-city-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+body.phone-shell #command-dock .location-search-wrap {
+  order: -1;
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+body.phone-shell #command-dock .location-search-wrap input {
+  flex: 1 1 auto;
+  min-width: 0;
+  /* 16px stops iOS Safari zooming the page when the field takes focus. */
+  font-size: 16px;
+}
+
+body.phone-shell #command-dock .location-pills,
+body.phone-shell #command-dock .dock-popover-content .button-grid {
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+/* ── Required map credit: one line just above the bar ── */
+body.phone-shell:not(.ui-clean-view):not(.recording-mode) #cesium-credits {
+  right: 8px !important;
+  bottom: calc(
+    var(--phone-nav-height) + var(--phone-safe-bottom) + 4px
+  ) !important;
+  left: 8px !important;
+  max-width: none !important;
+  white-space: nowrap;
+  transform: scale(0.82);
+  transform-origin: bottom left;
+}
+
+/* ── HUD: compact on the bare map, gone while a sheet is open ── */
+body.phone-shell #intel-hud .hud-top-right,
+body.phone-shell #intel-hud .hud-bottom-right,
+body.phone-shell #intel-hud .hud-top-bar,
+body.phone-shell #intel-hud .hud-bottom-bar {
+  display: none !important;
+}
+
+body.phone-shell #intel-hud .hud-top-left {
+  top: var(--phone-sheet-top) !important;
+  left: 8px !important;
+  max-width: calc(100vw - 16px);
+  overflow: hidden;
+}
+
+body.phone-shell #intel-hud .hud-bottom-left {
+  bottom: var(--phone-sheet-bottom) !important;
+  left: 8px !important;
+  max-width: calc(100vw - 16px);
+  overflow: hidden;
+}
+
+body.phone-shell[data-phone-sheet] #intel-hud .hud-corner {
+  display: none !important;
+}
+
+/* ── Language button: top, next to the logo ── */
+body.phone-shell #corner-actions {
+  top: calc(env(safe-area-inset-top, 0px) + 14px) !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: 60px !important;
+}

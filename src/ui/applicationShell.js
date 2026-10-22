@@ -46,6 +46,7 @@ import {
   t,
 } from '../i18n/index.js';
 import { applyLocaleChoice, mountLocalePicker } from './localePicker.js';
+import { initPhoneShell } from './phoneShell.js';
 
 /**
  * Central UI orchestrator for the God's Eye View application.
@@ -599,6 +600,8 @@ export class StyleManager extends ShellFacade {
     this._startTrafficChipTicker();
     this._updateStyleMiniStatus();
     this._updateLocationMiniStatus();
+    // Below 720px: a bottom tab bar, one panel at a time (ui/phoneShell.js).
+    this._phoneShell = initPhoneShell();
 
     this._shareRestoration.start();
 
@@ -1706,6 +1709,8 @@ export class StyleManager extends ShellFacade {
       unregister();
     this._localePicker?.destroy();
     this._localePicker = null;
+    this._phoneShell?.destroy();
+    this._phoneShell = null;
     this._recording.destroy();
     this._panelChrome.destroy();
     this._feedback.destroy();

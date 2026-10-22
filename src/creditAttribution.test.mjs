@@ -247,6 +247,9 @@ function ownBoxEntries() {
       const compound = lastCompound(part);
       if (!ELEMENT_KEYS.some((key) => compound.includes(key))) continue;
       if (compound.includes('::')) continue; // a pseudo-element is its own box
+      // The phone shell is a separate layout with its own credit band, pinned
+      // by 'the phone shell keeps the credit in its own band' below.
+      if (part.startsWith('body.phone-shell')) continue;
       entries.push({ rule, part });
     }
   }
@@ -434,6 +437,49 @@ test('the model refuses every cascade construct it cannot resolve', () => {
     }
   }
   assert.deepEqual(complaints, [], `the attribution model cannot resolve:\n  ${complaints.join('\n  ')}\n`);
+});
+
+test('the phone shell keeps the credit in its own band', () => {
+  // body.phone-shell (src/ui/phoneShell.js) stacks, from the bottom: the tab
+  // bar, the credit, then at most one sheet. Every sheet sits on the band's
+  // top edge, so nothing it opens can cover the credit.
+  const norm = (value) =>
+    value.replace(/\s+/g, ' ').replace(/\(\s/g, '(').replace(/\s\)/g, ')').trim();
+  const phoneRules = RULES.filter((rule) =>
+    rule.parts.some((part) => part.startsWith('body.phone-shell')),
+  );
+  const declIn = (selector, prop) => {
+    const rule = phoneRules.find((candidate) => candidate.parts.includes(selector));
+    const decl = rule?.decls.find((candidate) => candidate.prop === prop);
+    return decl && norm(decl.value);
+  };
+  assert.equal(declIn('body.phone-shell', '--phone-credit-band'), '26px');
+  assert.equal(
+    declIn('body.phone-shell', '--phone-sheet-bottom'),
+    'calc(var(--phone-nav-height) + var(--phone-safe-bottom) + var(--phone-credit-band) + 6px)',
+  );
+  const credit = 'body.phone-shell:not(.ui-clean-view):not(.recording-mode) #cesium-credits';
+  assert.equal(declIn(credit, 'bottom'), 'calc(var(--phone-nav-height) + var(--phone-safe-bottom) + 4px)');
+  assert.equal(declIn(credit, 'white-space'), 'nowrap');
+  const scale = Number(/^scale\(([\d.]+)\)$/.exec(declIn(credit, 'transform'))?.[1]);
+  assert.ok(scale > 0 && scale <= 1, 'the credit only shrinks, from its bottom edge');
+  assert.equal(declIn(credit, 'transform-origin'), 'bottom left');
+  // Credit spans [4px, 4px + scaled height] above the bar; sheets start at
+  // band + 6px.
+  assert.ok(4 + CREDIT_HEIGHT_PX * scale <= 26 + 6, 'the credit fits under every sheet');
+  let sheets = 0;
+  for (const rule of phoneRules) {
+    for (const part of rule.parts) {
+      if (!part.startsWith('body.phone-shell')) continue;
+      const compound = lastCompound(part);
+      if (!['#left-panel-stack', '#right-context-rail', '#command-dock', '.dock-popover-content'].some((key) => compound.includes(key))) continue;
+      const bottom = rule.decls.find((decl) => decl.prop === 'bottom');
+      if (!bottom) continue;
+      sheets += 1;
+      assert.equal(norm(bottom.value), 'var(--phone-sheet-bottom)', `"${part}" sits on the credit band`);
+    }
+  }
+  assert.ok(sheets >= 4, 'the rails, the dock and both trays are checked');
 });
 
 test('custom properties inside modelled offsets are provably non-negative', () => {
