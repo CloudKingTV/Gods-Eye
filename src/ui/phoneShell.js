@@ -201,6 +201,10 @@ export function initPhoneShell({
   // sheet with it.
   const onClassChange = (records) => {
     if (syncing || !body.classList.contains('phone-shell')) return;
+    // A playing scene enables layers that open their own panels (CCTV opens
+    // Cameras). Playback hides panels anyway; following those would leave a
+    // sheet over the globe when the scene ends.
+    if (body.classList.contains('scene-playback-mode')) return;
     for (const { target } of records) {
       const tab = tabForTarget(target.id);
       if (!tab) continue;

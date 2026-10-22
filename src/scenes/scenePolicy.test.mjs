@@ -46,6 +46,7 @@ const REGISTERED = new Set([
   'cctv', 'radio', 'bikeshare', 'ais-live-vessels', 'military-installations',
   'military-awareness', 'local-datacenters', 'local-dams',
   'telegeography-submarine-cables', 'local-firms',
+  'wind', 'weather-lightning', 'weather-cyclones', 'transit',
 ]);
 
 test('a shot only reconciles the layers it declares', () => {
@@ -209,6 +210,13 @@ test('shipped recipes touch only their four declared layers', () => {
       .map(([id, enabled]) => [id, { enabled }]);
     const plan = sceneLayerPlan(Object.fromEntries(declared), REGISTERED);
     assert.equal(plan.length, Object.keys(recipe.layers || {}).length, recipe.id);
-    assert.ok(plan.length <= 4, `${recipe.id} should not reach beyond its declared layers`);
+    // A story scene switches layers shot by shot, so its baseline declares
+    // (off) every layer any shot turns on; the demo reels stay at four.
+    const perShotLayers = recipe.cameraPath.some((keyframe) => keyframe.layers);
+    if (!perShotLayers)
+      assert.ok(plan.length <= 4, `${recipe.id} should not reach beyond its declared layers`);
+    for (const keyframe of recipe.cameraPath)
+      for (const layerId of Object.keys(keyframe.layers || {}))
+        assert.ok(REGISTERED.has(layerId), `${recipe.id} shot declares unknown layer ${layerId}`);
   }
 });

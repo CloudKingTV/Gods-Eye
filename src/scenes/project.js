@@ -145,7 +145,8 @@ export function recipeToScene(recipe) {
         roll: keyframe.roll || 0,
       },
       visual: {
-        style: recipe.style || 'normal',
+        // A keyframe may switch the look and detection mode for its shot.
+        style: keyframe.style || recipe.style || 'normal',
         bloom: {
           enabled:
             typeof post.bloom === 'number' ? post.bloom > 0 : !!post.bloom,
@@ -165,7 +166,7 @@ export function recipeToScene(recipe) {
           variant: hudVariant,
         },
         detection: {
-          mode: post.detectionMode || 'OFF',
+          mode: keyframe.detectionMode || post.detectionMode || 'OFF',
           density: 35,
         },
         ...(SCENE_MAP_STACK_IDS.has(mapStack) ? { mapStack } : {}),

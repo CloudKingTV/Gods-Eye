@@ -828,9 +828,166 @@ const WAINWRIGHT_FIRE_RECIPE = Object.freeze({
   ],
 });
 
+// A captioned tour of what runs without API keys: satellites, live flights,
+// earthquakes, weather, undersea cables and Austin's traffic and cameras,
+// each act in its own look. Every layer it turns on is off in the baseline,
+// so each shot shows only its own act.
+const SHOWCASE_LAYERS = Object.freeze([
+  'satellites',
+  'flights',
+  'earthquakes',
+  'wind',
+  'weather-lightning',
+  'weather-cyclones',
+  'telegeography-submarine-cables',
+  'traffic',
+  'transit',
+  'cctv',
+]);
+const showcaseLayers = (...enabled) =>
+  Object.fromEntries(enabled.map((layerId) => [layerId, true]));
+
+const GODS_EYE_SHOWCASE_RECIPE = Object.freeze({
+  id: 'gods-eye-showcase',
+  version: 1,
+  title: msg("God's Eye Showcase"),
+  durationSec: 100,
+  style: 'normal',
+  ui: { hidePanels: true, hudMode: 'minimal', safeFrame: '16:9' },
+  layers: Object.fromEntries(
+    SHOWCASE_LAYERS.map((layerId) => [layerId, false]),
+  ),
+  releaseLayerIds: [...SHOWCASE_LAYERS],
+  post: {
+    bloom: 55,
+    sharpen: true,
+    detectionMode: 'OFF',
+    mapStack: 'esri-imagery',
+  },
+  installAlongsideSceneId: 'wainwright-fire-2026',
+  installAlongsideFallbackSceneId: 'flights-radar',
+  playback: { single: true, safeFrame: 'none' },
+  cameraPath: [
+    {
+      title: msg('Orbit'),
+      caption: msg(
+        'Every dot is a satellite, placed from its published orbit and moving in real time. Night-vision look.',
+      ),
+      style: 'surveillance',
+      lat: 18,
+      lon: -40,
+      alt: 24000000,
+      pitch: -90,
+      duration: 6,
+      hold: 6,
+      layers: showcaseLayers('satellites'),
+    },
+    {
+      title: msg('Sky Traffic'),
+      caption: msg(
+        'Live aircraft over the North Atlantic, each pointing along its real heading. Boxes mark what the detection overlay sees. CRT look.',
+      ),
+      style: 'retro',
+      detectionMode: 'SPARSE',
+      lat: 47,
+      lon: -32,
+      alt: 4200000,
+      heading: 20,
+      pitch: -55,
+      duration: 6,
+      hold: 7,
+      layers: showcaseLayers('flights'),
+    },
+    {
+      title: msg('Restless Planet'),
+      caption: msg(
+        'Recent earthquakes from the USGS feed tracing the Pacific Ring of Fire, seen in the thermal (FLIR) look.',
+      ),
+      style: 'thermal',
+      lat: 8,
+      lon: -175,
+      alt: 17000000,
+      pitch: -90,
+      duration: 6,
+      hold: 6,
+      layers: showcaseLayers('earthquakes'),
+    },
+    {
+      title: msg('Weather Machine'),
+      caption: msg(
+        'Forecast winds animated across the planet, with lightning and any active tropical cyclones.',
+      ),
+      lat: 24,
+      lon: -62,
+      alt: 9500000,
+      pitch: -82,
+      duration: 6,
+      hold: 7,
+      layers: showcaseLayers('wind', 'weather-lightning', 'weather-cyclones'),
+    },
+    {
+      title: msg('Hidden Wires'),
+      caption: msg(
+        'The undersea cables that carry almost all intercontinental internet traffic.',
+      ),
+      lat: 38,
+      lon: -35,
+      alt: 8000000,
+      pitch: -78,
+      duration: 6,
+      hold: 6,
+      layers: showcaseLayers('telegeography-submarine-cables'),
+    },
+    {
+      title: msg('Austin Approach'),
+      caption: msg(
+        'Diving into Austin, Texas: simulated traffic on the real road network, and live transit vehicles.',
+      ),
+      lat: 30.2672,
+      lon: -97.7431,
+      alt: 45000,
+      pitch: -70,
+      duration: 7,
+      hold: 6,
+      layers: showcaseLayers('traffic', 'transit'),
+    },
+    {
+      title: msg('Street Cameras'),
+      caption: msg(
+        'Downtown Austin up close, with the city’s public traffic cameras on the map. Night-vision look.',
+      ),
+      style: 'surveillance',
+      detectionMode: 'DENSE',
+      lat: 30.252,
+      lon: -97.748,
+      alt: 1600,
+      heading: 20,
+      pitch: -32,
+      duration: 6,
+      hold: 7,
+      layers: showcaseLayers('traffic', 'cctv'),
+    },
+    {
+      title: msg('Pull Back'),
+      caption: msg(
+        'And back out to the whole planet: every layer here comes from public sources.',
+      ),
+      style: 'anime',
+      lat: 25,
+      lon: -75,
+      alt: 21000000,
+      pitch: -90,
+      duration: 7,
+      hold: 5,
+      layers: showcaseLayers('satellites', 'flights'),
+    },
+  ],
+});
+
 const EVENT_RECIPES = [
   BHOTE_KOSHI_NEPAL_BOOTSTRAP_RECIPE,
   WAINWRIGHT_FIRE_RECIPE,
+  GODS_EYE_SHOWCASE_RECIPE,
 ].filter(Boolean);
 
 const PUBLIC_SCENE_RECIPES = [
@@ -1267,6 +1424,14 @@ export function getSceneAppendRecipeById(id) {
 // and bindings match them verbatim). These are their display names; a title
 // the user typed shows as typed. Place names inside them stay Latin.
 const BUILTIN_SHOT_TITLES = new Set([
+  msg('Orbit'),
+  msg('Sky Traffic'),
+  msg('Restless Planet'),
+  msg('Weather Machine'),
+  msg('Hidden Wires'),
+  msg('Austin Approach'),
+  msg('Street Cameras'),
+  msg('Pull Back'),
   msg('Alberta Overview'),
   msg('CFB Wainwright Training Area'),
   msg('Before: 4 Oct 2026'),

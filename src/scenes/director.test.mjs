@@ -476,6 +476,7 @@ test('an older default project gains the complete selectable Nepal scene once', 
     assert.deepEqual(director._project.installedBuiltInSceneIds, [
       'bhote-koshi-nepal-scene',
       'wainwright-fire-2026',
+      'gods-eye-showcase',
     ]);
   } finally {
     restore();
@@ -515,7 +516,34 @@ test('an existing public default project gains Nepal without replacing authored 
     assert.deepEqual(director._project.installedBuiltInSceneIds, [
       'bhote-koshi-nepal-scene',
       'wainwright-fire-2026',
+      'gods-eye-showcase',
     ]);
+  } finally { restore(); }
+});
+
+test('the showcase installs after Wainwright with a look and layers per act', () => {
+  const project = structuredClone(PROJECT_FIXTURE);
+  project.scenes[0].id = 'flights-radar';
+  const { director, restore } = makeDirector({ project });
+  try {
+    const scenes = director._project.scenes;
+    const index = scenes.findIndex(({ id }) => id === 'gods-eye-showcase');
+    assert.equal(scenes[index - 1].id, 'wainwright-fire-2026');
+    const shots = scenes[index].shots;
+    assert.deepEqual(shots.map(({ visual }) => visual.style), [
+      'surveillance', 'retro', 'thermal', 'normal', 'normal', 'normal', 'surveillance', 'anime',
+    ]);
+    assert.equal(shots[1].visual.detection.mode, 'SPARSE');
+    assert.equal(shots[0].visual.detection.mode, 'OFF');
+    // Every shot declares every showcase layer, so each act shows only its own.
+    const declared = Object.keys(shots[0].layers).sort();
+    for (const shot of shots) assert.deepEqual(Object.keys(shot.layers).sort(), declared);
+    assert.deepEqual(
+      Object.entries(shots[3].layers).filter(([, state]) => state.enabled).map(([id]) => id),
+      ['wind', 'weather-lightning', 'weather-cyclones'],
+    );
+    assert.ok(shots.every((shot) => sceneShotCaption(scenes[index], shot).startsWith('Step ')));
+    assert.doesNotThrow(() => parseSceneDocument(JSON.stringify(director._project)));
   } finally { restore(); }
 });
 
