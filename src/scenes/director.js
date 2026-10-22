@@ -297,6 +297,25 @@ export class SceneDirector {
         installed.add(recipe.id);
         migrated = true;
       }
+      // A built-in story scene marked `replaceOlderVersions` is swapped for
+      // the current recipe while every shot in the saved copy still comes
+      // from an older version of it; a scene holding any shot the user
+      // captured is left alone.
+      for (const recipe of SCENE_RECIPES) {
+        if (!recipe.replaceOlderVersions || !recipe.version) continue;
+        const index = project.scenes.findIndex(({ id }) => id === recipe.id);
+        const stored = project.scenes[index];
+        const stale =
+          stored?.shots.length > 0 &&
+          stored.shots.every(
+            (shot) =>
+              shot.sourcePackId === recipe.id &&
+              (Number(shot.sourcePackVersion) || 0) < recipe.version,
+          );
+        if (!stale) continue;
+        project.scenes[index] = recipeToScene(recipe);
+        migrated = true;
+      }
       if (migrated) {
         project.installedBuiltInSceneIds = [...installed];
         try {

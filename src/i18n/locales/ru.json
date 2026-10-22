@@ -3036,12 +3036,12 @@
   "Austin Approach": "Подлёт к Остину",
   "Street Cameras": "Уличные камеры",
   "Pull Back": "Отдаление",
-  "Every dot is a satellite, placed from its published orbit and moving in real time. Night-vision look.": "Каждая точка — спутник, размещённый по опубликованной орбите и движущийся в реальном времени. Режим ночного видения.",
-  "Live aircraft over the North Atlantic, each pointing along its real heading. Boxes mark what the detection overlay sees. CRT look.": "Самолёты над Северной Атлантикой в реальном времени, каждый направлен по своему настоящему курсу. Рамки показывают, что видит слой обнаружения. Режим ЭЛТ.",
   "Recent earthquakes from the USGS feed tracing the Pacific Ring of Fire, seen in the thermal (FLIR) look.": "Недавние землетрясения по данным USGS очерчивают Тихоокеанское огненное кольцо. Тепловой режим (FLIR).",
   "Forecast winds animated across the planet, with lightning and any active tropical cyclones.": "Анимация прогнозного ветра по всей планете, молнии и активные тропические циклоны.",
   "The undersea cables that carry almost all intercontinental internet traffic.": "Подводные кабели, по которым идёт почти весь межконтинентальный интернет-трафик.",
   "Diving into Austin, Texas: simulated traffic on the real road network, and live transit vehicles.": "Снижение над Остином, Техас: смоделированное движение по реальной дорожной сети и общественный транспорт в реальном времени.",
   "Downtown Austin up close, with the city’s public traffic cameras on the map. Night-vision look.": "Центр Остина вблизи, с городскими камерами наблюдения за движением на карте. Режим ночного видения.",
-  "And back out to the whole planet: every layer here comes from public sources.": "И обратно ко всей планете: каждый слой здесь взят из открытых источников."
+  "And back out to the whole planet: every layer here comes from public sources.": "И обратно ко всей планете: каждый слой здесь взят из открытых источников.",
+  "Every dot is a satellite, Starlink included, placed from its published orbit and moving in real time.": "Каждая точка — спутник, включая Starlink, размещённый по опубликованной орбите и движущийся в реальном времени.",
+  "Live aircraft over the US East Coast, each pointing along its real heading. Boxes mark what the detection overlay sees. CRT look.": "Самолёты над восточным побережьем США в реальном времени, каждый направлен по своему настоящему курсу. Рамки показывают, что видит слой обнаружения. Режим ЭЛТ."
 }

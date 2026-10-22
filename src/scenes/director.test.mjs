@@ -24,6 +24,7 @@ import {
   sceneShotCaptionHoldSec,
 } from './recipes.js';
 import { parseSceneDocument } from '../director/document.js';
+import { recipeToScene } from './project.js';
 
 const NEPAL_ORIGINAL_SHOT_TITLES = [
   'Global Incident Context',
@@ -531,8 +532,12 @@ test('the showcase installs after Wainwright with a look and layers per act', ()
     assert.equal(scenes[index - 1].id, 'wainwright-fire-2026');
     const shots = scenes[index].shots;
     assert.deepEqual(shots.map(({ visual }) => visual.style), [
-      'surveillance', 'retro', 'thermal', 'normal', 'normal', 'normal', 'surveillance', 'anime',
+      'normal', 'retro', 'thermal', 'normal', 'normal', 'normal', 'surveillance', 'anime',
     ]);
+    assert.deepEqual(shots[0].layers.satellites, { enabled: true, params: { catalog: 'dense' } });
+    // At most 1 min 30 s, even before layer start-up.
+    const authored = shots.reduce((sum, shot) => sum + shot.durationSec + shot.holdSec, 0);
+    assert.ok(authored <= 80, `showcase runs ${authored}s`);
     assert.equal(shots[1].visual.detection.mode, 'SPARSE');
     assert.equal(shots[0].visual.detection.mode, 'OFF');
     // Every shot declares every showcase layer, so each act shows only its own.
@@ -545,6 +550,35 @@ test('the showcase installs after Wainwright with a look and layers per act', ()
     assert.ok(shots.every((shot) => sceneShotCaption(scenes[index], shot).startsWith('Step ')));
     assert.doesNotThrow(() => parseSceneDocument(JSON.stringify(director._project)));
   } finally { restore(); }
+});
+
+test('an untouched older showcase in a saved project is replaced by the current one', () => {
+  const recipe = SCENE_RECIPES.find(({ id }) => id === 'gods-eye-showcase');
+  const older = recipeToScene({ ...recipe, version: 1 });
+  older.shots.forEach((shot) => { shot.holdSec = 7; });
+  const project = structuredClone(PROJECT_FIXTURE);
+  project.scenes[0].id = 'flights-radar';
+  project.scenes.push(older);
+  project.installedBuiltInSceneIds = ['bhote-koshi-nepal-scene', 'wainwright-fire-2026', 'gods-eye-showcase'];
+  const { director, restore } = makeDirector({ project });
+  try {
+    const scene = director._project.scenes.find(({ id }) => id === 'gods-eye-showcase');
+    assert.ok(scene.shots.every((shot) => shot.sourcePackVersion === recipe.version));
+    assert.equal(scene.shots[0].holdSec, recipe.cameraPath[0].hold);
+  } finally { restore(); }
+
+  // A shot the user captured into it keeps the saved scene as it is.
+  const kept = recipeToScene({ ...recipe, version: 1 });
+  kept.shots.push({ ...kept.shots[0], id: 'mine', sourcePackId: undefined, sourcePackVersion: undefined });
+  const withMine = structuredClone(PROJECT_FIXTURE);
+  withMine.scenes.push(kept);
+  withMine.installedBuiltInSceneIds = ['bhote-koshi-nepal-scene', 'wainwright-fire-2026', 'gods-eye-showcase'];
+  const second = makeDirector({ project: withMine });
+  try {
+    const scene = second.director._project.scenes.find(({ id }) => id === 'gods-eye-showcase');
+    assert.equal(scene.shots.length, recipe.cameraPath.length + 1);
+    assert.ok(scene.shots.some(({ id }) => id === 'mine'));
+  } finally { second.restore(); }
 });
 
 test('a story scene plays alone; other scenes keep the project round-robin', async () => {
